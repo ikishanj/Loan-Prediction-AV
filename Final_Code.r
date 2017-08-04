@@ -85,7 +85,7 @@ combi$Credit_History[is.na(combi$Credit_History)] <- predict(CH_fit, combi[is.na
 
 
 #dealing the Loan Amount, replacing Na with the avg amount
-combi$LoanAmount[is.na(combi$LoanAmount)] <- 144
+combi$LoanAmount[is.na(combi$LoanAmount)] <- 126
 #dealing the Loan
 combi$Loan_Amount_Term[is.na(combi$Loan_Amount_Term)] <- 360
 
@@ -133,7 +133,7 @@ test <- combi[615:981,]
 #droping the levels in train$Loanstatus
 train$Loan_Status <- droplevels(train$Loan_Status)
 
-#doing thr fit with rpart
+#doing the fit with rpart
 
 fit<- rpart(Loan_Status ~ Dependents+ Gender +Married + CoapplicantIncome+ ApplicantIncome+ Education + Self_Employed +Property_Area  + Income_be_Loan +EMI + AICP_by_Loan+ NA_number+ app_YN +Credit_History,
             data = train,
@@ -144,9 +144,58 @@ fit<- rpart(Loan_Status ~ Dependents+ Gender +Married + CoapplicantIncome+ Appli
 #predicting and creating a submission file
 Prediction <- predict(fit,test ,type = "class")
 submit <- data.frame(Loan_ID = test$Loan_ID,Loan_Status = Prediction)
-write.csv(submit,file = "Finalcode_1.csv",row.names = FALSE)
+write.csv(submit,file = "Finalcode_Best.csv",row.names = FALSE)
 
+#This is giving me a efficiency of 0.788 
 
 #Rforest
-feature_E_rf <- randomForest(Loan_Status~., data=train[-c (1,8, 9,16,17)], mtry=3, ntree=1000)
+feature_E_rf <- randomForest(Loan_Status~., data=train[-c (1)], mtry=3, ntree=1000)
 feature_E_rf
+#finding the impotance of the varables 
+
+varImpPlot(feature_E_rf,type = 2)
+# i see that credit history is the most important variable to decide the loan status
+# repredicting the Loan status with rpart with the feature engineerind values
+
+#reloading the data sents with a different named_commas
+
+#reading and storing the data
+test_dumm = read.csv(file = "test.csv")
+train_dumm = read.csv(file = "train.csv")
+
+#creating a loan_status colum in test
+test_dumm$Loan_Status <- rep("",367)
+
+#adding the old credit history with missing values
+test$Credit_History <- test_dumm$Credit_History
+train$Credit_History <- train_dumm$Credit_History
+
+
+combi_ch <- rbind(train,test)
+
+CH2_fit <- rpart(Credit_History ~ Gender + Married + Dependents + Education + Self_Employed + ApplicantIncome+
+                   CoapplicantIncome + LoanAmount + Loan_Status + EMI,
+                 data = combi_ch[!is.na(combi_ch$Credit_History),],
+                 method = "anova")
+
+combi_ch$Credit_History[is.na(combi_ch$Credit_History)] <- predict(CH2_fit, combi_ch[is.na(combi_ch$Credit_History),])
+
+combi_ch$Credit_History <- round(combi_ch$Credit_History, digits = 0)
+combi_ch$Credit_History <- as.factor(combi_ch$Credit_History)
+
+
+train <- combi_ch[1:614,]
+test <- combi_ch[615:981,]
+#droping the levels in train$Loanstatus
+train$Loan_Status <- droplevels(train$Loan_Status)
+
+#doing thr fit with rpart
+
+fit<- rpart(Loan_Status ~ Dependents+ Gender +Married + CoapplicantIncome+ ApplicantIncome+ Education + Self_Employed +Property_Area  + Income_be_Loan +EMI + AICP_by_Loan+ NA_number+ app_YN +Credit_History,
+            data = train,
+            method = "class")
+
+#predicting and creating a submission file
+Prediction <- predict(fit,test ,type = "class")
+submit <- data.frame(Loan_ID = test$Loan_ID,Loan_Status = Prediction)
+write.csv(submit,file = "Finalcode_Best.csv",row.names = FALSE)
