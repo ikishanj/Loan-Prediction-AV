@@ -199,3 +199,5 @@ fit<- rpart(Loan_Status ~ Dependents+ Gender +Married + CoapplicantIncome+ Appli
 Prediction <- predict(fit,test ,type = "class")
 submit <- data.frame(Loan_ID = test$Loan_ID,Loan_Status = Prediction)
 write.csv(submit,file = "Finalcode_Best.csv",row.names = FALSE)
+
+#this gave me an accuracy of 0.798611 putting me at 87* Postion out of 1500
